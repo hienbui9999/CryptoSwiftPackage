@@ -4,6 +4,7 @@ import secp256k1
 import libsecp256k1
 
 //https://cocoapods.org/pods/secp256k1.swift
+//under MIT license
 public class CryptoSwiftPackage {
     
     public private(set) var text = "Hello, World!"
@@ -94,7 +95,8 @@ public class CryptoSwiftPackage {
         }
         
     }
-    public func GenerateKey() {
+    public func Ed25519GenerateKey() {
+        print("------------- Ed25519GenerateKey from web ------------- ")
         let (publicKey,secretKey) = Ed25519.generateKeyPair();
         print("publicKey:\(publicKey), secreteKey:\(secretKey)")
         let publicKey2 = Ed25519.calcPublicKey(secretKey: secretKey)
@@ -116,4 +118,37 @@ public class CryptoSwiftPackage {
             print("Sign valideate fail!")
         }
     }
+    public func Ed25519BuiltInSwift (){
+        print("------------- Ed25519 Built in Swift -------------")
+        let privateKey = Curve25519.Signing.PrivateKey.init();
+        print("privateKey:\(privateKey.rawRepresentation.base64EncodedString())");
+        print("privateKey in bytes:\(privateKey.rawRepresentation.bytes)")
+        let publicKey = privateKey.publicKey
+        print("public Key:\(publicKey.rawRepresentation.base64EncodedString())")
+        print("public key in bytes:\(publicKey.rawRepresentation.bytes)")
+        if Ed25519.isValidKeyPair(publicKey: publicKey.rawRepresentation.bytes, secretKey: privateKey.rawRepresentation.bytes) {
+            print("Key pair valid")
+        } else {
+            print("Key pair invalid")
+        }
+        
+       
+        let message:[UInt8] = [123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,3,2,144,42,3,4,3,5];
+        do {
+            let signMessage = try privateKey.signature(for: message);
+            print("signMessage:\(signMessage.base64EncodedString().bytes), other way:\(signMessage.base64EncodedData().bytes)")
+            if Ed25519.verify(signature: signMessage.base64EncodedData().bytes, message: message, publicKey: publicKey.rawRepresentation.bytes) {
+                print("Verify success")
+            } else {
+                print("Verify fail!")
+            }
+            //if Curve25519.very
+        } catch {
+            
+        }
+    }
+    //Ed25519 write to PEM
+    //Ed25519 read from PEM
+    //Secp256k1 write to PEM
+    //Secp256k1 read from PEM
 }
