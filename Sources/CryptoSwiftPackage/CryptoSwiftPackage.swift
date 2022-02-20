@@ -18,6 +18,10 @@ public class CryptoSwiftPackage {
        // let privateKey = Curve25519.KeyAgreement.PrivateKey()
         //let publicKey = Curve25519.KeyAgreement.PublicKey()
     }
+    public func P256SwiftGenerateKey() {
+        //let privateKey = P256.Signing.PrivateKey.init(rawRepresentation: <#T##ContiguousBytes#>);
+       // let publicKey = P256.Signing.PublicKey.init(rawRepresentation: privateKey.)
+    }
     public func secp256k1GenerateKey() {
         print("-------------------------secp256k1GenerateKey----------------------------------------")
         //ECDSASignature.init(rawRepresentation: <#T##D#>)
@@ -35,12 +39,15 @@ public class CryptoSwiftPackage {
          seckey
          pubkey
          */
+       // let privateSwift = ECDSASignature.init(rawRepresentation: <#T##D#>)
         ///private generation using Swift built in library
         let privateKey = P256.Signing.PrivateKey.init(compactRepresentable: true).rawRepresentation;
+       
         print("private key for P256 is:\(privateKey.base64EncodedString())")
         ///context for handling public key generation and  signing
         let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN));
         let signature : UnsafeMutablePointer<secp256k1_ecdsa_signature> = UnsafeMutablePointer<secp256k1_ecdsa_signature>.allocate(capacity: 1);
+        
         let messageToSignArray:[UInt8] = [1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,3,3,4,5,3,4,5,3,4,5,4,4,2];
         var messageToSign : UnsafePointer<UInt8> = UnsafePointer(messageToSignArray);
         ///public key generation
@@ -56,6 +63,7 @@ public class CryptoSwiftPackage {
                 ///check private key valid
                 let validPrivateKey = secp256k1_ec_seckey_verify(ctx!,privateKeyBytes);
                 print("validPrivateKey:\(validPrivateKey)")
+               
                 ///make the public key available through the call function
                 let result = secp256k1_ec_pubkey_create(ctx!,pk_secp256k1_pubkey,privateKeyBytes);
                 print("Publick kEy is:\(pk_secp256k1_pubkey.pointee), result:\(result)")
@@ -91,9 +99,19 @@ public class CryptoSwiftPackage {
         }
         let ctx2 = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_VERIFY))
         if ctx2 != nil {
+            do {
+                let publicKeyMac = try P256.Signing.PublicKey.init(rawRepresentation: privateKey.bytes)
+                var pk_secp256k1_pubkey2 : UnsafeMutablePointer<secp256k1_pubkey> = UnsafeMutablePointer<secp256k1_pubkey>.allocate(capacity: 1);
+               // secp256k1_ec_pubkey_parse(ctx2!,pk_secp256k1_pubkey2,publicKeyMac.rawRepresentation.bytes);
+                //let resultVerifyMessage2 = secp256k1_ecdsa_verify(ctx2!,signature,messageToSign,publicKeyMac);
+                //print("2222The message is verify with result:\(resultVerifyMessage2)");
+            } catch {
+                
+            }
             print("Signature in context 2:\(signature.pointee.data)")
             let resultVerifyMessage = secp256k1_ecdsa_verify(ctx2!,signature,messageToSign,pk_secp256k1_pubkey);
             print("The message is verify with result:\(resultVerifyMessage)");
+          
         }
         
     }
