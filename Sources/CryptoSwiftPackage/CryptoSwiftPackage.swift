@@ -4,6 +4,8 @@ import secp256k1
 import libsecp256k1
 
 //https://cocoapods.org/pods/secp256k1.swift
+//https://github.com/vzsg/ed25519
+//https://github.com/pebble8888/ed25519swift.git
 //under MIT license
 public class CryptoSwiftPackage {
     
@@ -123,7 +125,14 @@ public class CryptoSwiftPackage {
         let privateKey = Curve25519.Signing.PrivateKey.init();
         print("privateKey:\(privateKey.rawRepresentation.base64EncodedString())");
         print("privateKey in bytes:\(privateKey.rawRepresentation.bytes)")
+        let privateKeyData = privateKey.rawRepresentation
         let publicKey = privateKey.publicKey
+        do {
+            let publicKey1 = try Curve25519.Signing.PublicKey(rawRepresentation: privateKeyData)
+        } catch {
+            
+        }
+       
         print("public Key:\(publicKey.rawRepresentation.base64EncodedString())")
         print("public key in bytes:\(publicKey.rawRepresentation.bytes)")
         if Ed25519.isValidKeyPair(publicKey: publicKey.rawRepresentation.bytes, secretKey: privateKey.rawRepresentation.bytes) {
@@ -135,13 +144,38 @@ public class CryptoSwiftPackage {
        
         let message:[UInt8] = [123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,3,2,144,42,3,4,3,5];
         do {
+            //let dataArray = Data(message);
+           //sign using Mac
             let signMessage = try privateKey.signature(for: message);
-            print("signMessage:\(signMessage.base64EncodedString().bytes), other way:\(signMessage.base64EncodedData().bytes)")
-            if Ed25519.verify(signature: signMessage.base64EncodedData().bytes, message: message, publicKey: publicKey.rawRepresentation.bytes) {
-                print("Verify success")
+            //sign using Ed25519
+            let signMessage2 = Ed25519.sign(message: message, secretKey: privateKey.rawRepresentation.bytes)
+            //let keyPair = try publicKey.si
+            print("signMessage using Mac:\(signMessage.base64EncodedString().bytes),\n signMessage using Ed25519:\(signMessage2)")
+            //check with sign Mac message
+            if Ed25519.verify(signature: signMessage2, message: message, publicKey: publicKey.rawRepresentation.bytes) {
+                print("Ed25519 verify for self Ed25519 signMessage success")
             } else {
-                print("Verify fail!")
+                print("Ed25519 verify for self Ed25519 signMessage fail!")
             }
+            //check with sign Ed25519 message
+            if Ed25519.verify(signature: signMessage.bytes, message: message, publicKey: publicKey.rawRepresentation.bytes) {
+                print("Ed25519 verify Mac message success")
+            } else {
+                print("Ed25519 verify Mac message fail")
+            }
+            //check Mac for Mac sign
+            if publicKey.isValidSignature(signMessage, for: message) {
+                print("Mac check for Mac signuture success")
+            } else {
+                print("Mac check for Mac signature fail")
+            }
+            //check Mac for Ed25519 sign
+            if publicKey.isValidSignature(signMessage2, for: message) {
+                print("Mac check for Ed25519 message success")
+            } else {
+                print("Mac check for Ed25519 message fail")
+            }
+            
             //if Curve25519.very
         } catch {
             

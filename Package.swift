@@ -8,6 +8,7 @@ let package = Package(
     platforms: [.macOS(.v10_15),.iOS(.v13)],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
+        //.package(name:"ed25519vzsg",url: "https://github.com/vzsg/ed25519.git", from:"0.1.0"),
         .library(
             name: "CryptoSwiftPackage",
             targets: ["CryptoSwiftPackage"]),
@@ -15,6 +16,7 @@ let package = Package(
     dependencies: [
         .package(name:"ed25519swift",url: "https://github.com/pebble8888/ed25519swift.git", from: "1.2.7"),
         .package(name:"secp256k1",url: "https://github.com/Boilertalk/secp256k1.swift.git", from: "0.1.0"),
+       
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
