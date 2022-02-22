@@ -5,9 +5,13 @@ import CryptoKit
 final class CryptoSwiftPackageTests: XCTestCase {
     func testExample() throws {
         XCTAssertEqual(CryptoSwiftPackage().text, "Hello, World!")
-        let csp : CryptoSwiftPackage = CryptoSwiftPackage();
+        /*let csp : CryptoSwiftPackage = CryptoSwiftPackage();
         csp.Ed25519GenerateKey();
         csp.secp256k1GenerateKey()
-        csp.Ed25519BuiltInSwift();
+        csp.Ed25519BuiltInSwift();*/
+        let ed25519BuiltInSwift: ED25519BuiltInSwift = ED25519BuiltInSwift();
+        ed25519BuiltInSwift.keyGenerate3();
+        //ed25519BuiltInSwift.generateBytes();
+        
     }
 }

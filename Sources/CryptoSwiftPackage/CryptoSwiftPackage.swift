@@ -1,5 +1,6 @@
 import ed25519swift
 import CryptoKit
+import Security
 import secp256k1
 import libsecp256k1
 
@@ -43,6 +44,7 @@ public class CryptoSwiftPackage {
         ///private generation using Swift built in library
         let privateKey = P256.Signing.PrivateKey.init(compactRepresentable: true).rawRepresentation;
        
+        let privateKey2 = Curve25519.Signing.PrivateKey.init();
         print("private key for P256 is:\(privateKey.base64EncodedString())")
         ///context for handling public key generation and  signing
         let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN));
@@ -53,6 +55,11 @@ public class CryptoSwiftPackage {
         ///public key generation
           var pk_secp256k1_pubkey : UnsafeMutablePointer<secp256k1_pubkey> = UnsafeMutablePointer<secp256k1_pubkey>.allocate(capacity: 1);
         if ctx != nil {
+            privateKey2.rawRepresentation.withUnsafeBytes { (unsafeBytes) in
+                let privateKeyBytes2 = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
+                let validPrivateKey2 = secp256k1_ec_seckey_verify(ctx!,privateKeyBytes2);
+                print("validPrivateKey2:\(validPrivateKey2)")
+            }
             print("Context created,ctx:\(ctx), ctxHashValue:\(ctx?.hashValue)")
             privateKey.withUnsafeBytes { (unsafeBytes) in
                 let privateKeyBytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
@@ -63,6 +70,9 @@ public class CryptoSwiftPackage {
                 ///check private key valid
                 let validPrivateKey = secp256k1_ec_seckey_verify(ctx!,privateKeyBytes);
                 print("validPrivateKey:\(validPrivateKey)")
+                
+               // let publicKeyMac256k1 = SecKeyCopyPublicKey(privateKey.bytes as! SecKey)
+               // print("PubclKeyMac256k1:\(publicKeyMac256k1)")
                
                 ///make the public key available through the call function
                 let result = secp256k1_ec_pubkey_create(ctx!,pk_secp256k1_pubkey,privateKeyBytes);
