@@ -21,7 +21,7 @@ final class CryptoSwiftPackageTests: XCTestCase {
             let publicKeyFullBytes = prefixPublicKeyData + publicKey.rawRepresentation
             print("public key full base 64:\(publicKeyFullBytes.base64EncodedString())")
             let message:[UInt8] = [123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,3,2,144,42,3,4,3,5];
-            let message2:String = "Hello world!. Welcome all abroad!"
+            let message2:String = "0203f3f44c9e80e2cedc1a2909631a3adea8866ee32187f74d0912387359b0ff36a2"
             do {
                 let signedMessage = try ed25519Swift.signMessage(messageToSign: Data(message))//privateKey.signature(for: message)
                 let isSignCorrect = ed25519Swift.verify(signedMessage: signedMessage, pulicKeyToVerify: publicKey, originalMessage: Data(message))
@@ -29,6 +29,9 @@ final class CryptoSwiftPackageTests: XCTestCase {
                 print("isSign2 correct:\(isSignCorrect)")
                 
                 let signedMessage2 = try ed25519Swift.signMessage(messageToSign: Data(message2.bytes))//privateKey.signature(for: message)
+                let message2InHex = signedMessage2.toHexString();
+                print("message2InHex:")
+                print(message2InHex)
                 let isSignCorrect2 = ed25519Swift.verify(signedMessage: signedMessage2, pulicKeyToVerify: publicKey, originalMessage: Data(message2.bytes))
                 
                 print("isSign2 correct:\(isSignCorrect2)")
