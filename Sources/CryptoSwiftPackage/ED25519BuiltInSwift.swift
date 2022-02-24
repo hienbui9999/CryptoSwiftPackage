@@ -5,7 +5,6 @@ public class ED25519BuiltInSwift {
     public func generateBytes() {
         var bytes = [UInt8](repeating: 0, count: 32)
         let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-
         if status == errSecSuccess { // Always test the status.
             print("bytes generated from random bytes:\(bytes)")
             print("base 64Encoding of bytes:\(bytes.toBase64())")
@@ -21,27 +20,208 @@ public class ED25519BuiltInSwift {
         print("Data in hex:\(data?.toHexString())")
         print("Data in bytes:\(data?.bytes)")
     }
+    public func readPrivateKeyFromFile(fileName:String) {
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+           // let file = "scalaEd25519SecretKey.pem"
+            let fileURL = dir.appendingPathComponent(fileName)
+            print("File url:\(fileURL)");
+            //reading
+            do {
+                let text2 = try String(contentsOf: fileURL, encoding: .utf8)
+                print("Text from Pem file is:\n \(text2)")
+                let element = text2.components(separatedBy: "-----BEGIN PRIVATE KEY-----")
+               // print("eleemnt1:\(element[1])")
+                let text1 = element[1];
+                let textE = text1.components(separatedBy:"-----END PRIVATE KEY-----")
+               // print("element0:\(textE[0])")
+                var pemStr = textE[0];
+                if pemStr.count > 64 {
+                    let index = pemStr.index(pemStr.startIndex,offsetBy:65);
+                    let realPemStr = String(pemStr[..<index]);
+                    pemStr = realPemStr;
+                }
+                print("pemStr:\(pemStr)")
+                //pemStr if parse from Swift can return as privateKeyBase64String
+                //but if generate from scala we need to replace the first 22 character
+                //with the other character in order to generate the right key
+                let pemIndex = pemStr.index(pemStr.startIndex,offsetBy: 22);
+                let privateBase64:String = String(pemStr[pemIndex..<pemStr.endIndex])
+                print("privateBase64:\(privateBase64)")
+                //base64ToPrivateKey(base64String: privateBase64)
+                print("privateBase64Extension:")
+                let privateBase64Extension = prefixPrivateKeyStr + privateBase64
+               // base64ToPrivateKey(base64String: privateBase64Extension)
+                print("done")
+            }
+            catch {/* error handling here */}
+        }
+    }
+    public func fromPemFileToPrivateKeyBase64String(pemFileName:String)throws -> String {
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+           // let file = "scalaEd25519SecretKey.pem"
+            let fileURL = dir.appendingPathComponent(pemFileName)
+            print("File url:\(fileURL)");
+            //reading
+            do {
+                let text2 = try String(contentsOf: fileURL, encoding: .utf8)
+                let element = text2.components(separatedBy: "-----BEGIN PRIVATE KEY-----")
+                if !text2.contains("-----BEGIN PRIVATE KEY-----") {
+                    throw PemFileHandlerError.InvalidPemKeyFormat
+                }
+                if !text2.contains("-----END PRIVATE KEY-----") {
+                    throw PemFileHandlerError.InvalidPemKeyFormat
+                }
+                let text1 = element[1];
+                let textE = text1.components(separatedBy:"-----END PRIVATE KEY-----")
+                var pemStr = textE[0];
+                if pemStr.count > 64 {
+                    let index = pemStr.index(pemStr.startIndex,offsetBy:65);
+                    let realPemStr = String(pemStr[..<index]);
+                    pemStr = realPemStr;
+                }
+                let pemIndex = pemStr.index(pemStr.startIndex,offsetBy: 22);
+                let privateBase64:String = String(pemStr[pemIndex..<pemStr.endIndex])
+                //return prefixPrivateKeyStr + privateBase64
+                return privateBase64
+            }
+            catch {
+                throw error
+            }
+        } else {
+            throw PemFileHandlerError.ReadPemFileNotFound
+        }
+    }
+    
+    public func fromBase64StringToPrivateKey(from:String) throws -> Curve25519.Signing.PrivateKey {
+        print("fromBase64StringToPrivateKey func, base 64 str: \( from)")
+        let fullPemKeyBase64 = prefixPrivateKeyStr + from;
+        let hexaStr = fullPemKeyBase64.hexDecodedData();
+        let base64ToBytes = fullPemKeyBase64.base64Decoded!.bytes
+        print("base64ToBytes")
+        print(base64ToBytes)
+        let privateBytes = base64ToBytes[prefixPrivateKeyData.count..<base64ToBytes.count];
+        print("privateByets:\(privateBytes)")
+        do {
+            if let base64 = from.base64Decoded {
+                let privateKey = try Curve25519.Signing.PrivateKey.init(rawRepresentation: base64.bytes)
+                print("privateKey after init, base 64 str:")
+                print(privateKey.rawRepresentation.base64EncodedString())
+                print("privateKEy success, value in bytes:\(privateKey.rawRepresentation.bytes)")
+                print("done")
+            } else {
+                print("Generate from key:\(from) failed!")
+            }
+        } catch {
+            throw GenerateKeyError.PrivateKeyGenerateError
+        }
+        do {
+            let privateKey = try Curve25519.Signing.PrivateKey.init(rawRepresentation: privateBytes)
+            print("privateKEy success, value in bytes:\(privateKey.rawRepresentation.bytes)")
+            print("privateKey after init, base 64 str:")
+            print(privateKey.rawRepresentation.base64EncodedString())
+            let subjectPrivateKeyInfo = prefixPrivateKeyData + privateKey.rawRepresentation
+            
+            print("privateKey after init and add prefix, base 64 str:")
+            print(subjectPrivateKeyInfo.base64EncodedString())
+            print("done")
+            return privateKey
+        } catch {
+            throw GenerateKeyError.PrivateKeyGenerateError
+        }
+        
+    }
+    public func writePrivateKeyToFile(privateKeyInBase64:String) {
+        let dirPath = NSTemporaryDirectory()
+        print("dirPath:\(dirPath)")
+        let bundleMainPath = Bundle.main.bundlePath
+        print("bundleMainPath is:\(bundleMainPath)")
+        let canCreate = FileManager.default.isWritableFile(atPath:dirPath)
+        if (canCreate) {
+            print("Can create at dirpath");
+        }
+        let file = "ed25519SwiftSecretKey.pem"
+        var text = "-----BEGIN PRIVATE KEY-----" //just a text
+        text = text + "\n" + privateKeyInBase64
+        text = text + "\n" + "-----END PRIVATE KEY-----"
+
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+
+            let fileURL = dir.appendingPathComponent(file)
+            
+            print("File url:\(fileURL)");
+
+            //writing
+            do {
+                try text.write(to: fileURL, atomically: false, encoding: .utf8)
+            }
+            catch {/* error handling here */}
+
+            //reading
+            do {
+                let text2 = try String(contentsOf: fileURL, encoding: .utf8)
+                print("Text from Pem file is:\n\(text2)")
+               
+            }
+            catch {
+                print("Error:\(error)")
+            }
+        }
+    }
+    public func keyGenerate5() {
+        let privateKey = Curve25519.Signing.PrivateKey.init();
+        let publicKey = privateKey.publicKey;
+        
+    }
     public func keyGenerate3() {
+        //readPrivateKeyFromFile(fileName: "scalaEd25519SecretKey.pem");
+        //readPrivateKeyFromFile(fileName: "ed25519SwiftSecretKey.pem");
+        do {
+            let private1 = try fromPemFileToPrivateKeyBase64String(pemFileName: "scalaEd25519SecretKey.pem")
+            print("private 1:\(private1)")
+            let privateKeyReal1 = try fromBase64StringToPrivateKey(from: private1)
+        } catch {
+            print("Error:\(error)")
+        }
+        do {
+            let private2 = try fromPemFileToPrivateKeyBase64String(pemFileName: "ed25519SwiftSecretKey.pem")
+            print("private 2:\(private2)")
+            let privateKeyReal2 = try fromBase64StringToPrivateKey(from: private2)
+        } catch {
+            print("Error:\(error)")
+        }
         base64ToHex(base64Str: "MCowBQYDK2VuAyEA")
         print("-----")
         base64ToHex(base64Str: "MC4CAQAwBQYDK2VwBCIEI")
+       // base64ToHex(base64Str: "MFECAQEwBQYDK2VwBCIEIPKrYesu4to9hvMQ/vx6IRn9erMVZx1OANgJK3RxxOAsgSEA3sD0ugHBfA5Agv1AW2rlP3NpMJ0C0DSNhURfG3HzHrI=");
+        base64ToHex(base64Str: "MC4CAQAwBQYDK2VwBCIEIEboFx3ESggkPbLzvNLlu8ZKHhltdRfxAlocKbW0SEv3")
+        base64ToHex(base64Str: "MC4CAQAwBQYDK2VwBCIEINRjlbiAvFJvucKQAmvDatlOviXQg9bU+yh1dw8+Mexs")
         let privateKey = Curve25519.Signing.PrivateKey.init();
         let publicKey = privateKey.publicKey;
         //private key to PEM
-        let prefixPublicKey = Data([0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x6E, 0x03, 0x21, 0x00])
-        let prefixPrivateKey = Data([0x30, 0x22, 0x48, 0x12, 0x0A, 0x03, 0x2B, 0x65, 0x6E, 0x03, 0x21, 0x00, 0x33, 0x30])
-        print("prefixPublicKey to hexa string:\(prefixPublicKey.toHexString())")
-        print("prefixPublicKey to bytes:\(prefixPublicKey.bytes)")
-        print("prefixPublicKey to base64:\(prefixPublicKey.base64EncodedString())")
-        //private and public to hexa string
-        print("privateKey in hexastring:\(privateKey.rawRepresentation.hexEncodedString())")
-        print("publicKey in hexastring:\(publicKey.rawRepresentation.hexEncodedString())")
         
-        let subjectPublicKeyInfo = prefixPublicKey + publicKey.rawRepresentation
-        print("subjectPublicKeyInfo in hexastring:\(subjectPublicKeyInfo.toHexString())")
+        print("prefixPublicKey to hexa string:\(prefixPublicKeyData.toHexString())")
+        print("prefixPublicKey to bytes:\(prefixPublicKeyData.bytes)")
+        print("prefixPublicKey to base64:\(prefixPublicKeyData.base64EncodedString())")
+        //private and public to hexa string
+        
+     //   print("privateKey in hexastring:\(privateKey.rawRepresentation.hexEncodedString())")
+        
+    //    print("publicKey in hexastring:\(publicKey.rawRepresentation.hexEncodedString())")
+        
+        print("privateKey Bytes:\(privateKey.rawRepresentation.bytes)")
+        print("publicKey bytes:\(publicKey.rawRepresentation.bytes)")
+        
+        let subjectPublicKeyInfo = prefixPublicKeyData + publicKey.rawRepresentation
+   //     print("subjectPublicKeyInfo in hexastring:\(subjectPublicKeyInfo.toHexString())")
         let pemPublicKeyString = subjectPublicKeyInfo.base64EncodedString();
-        let subjectPrivateKeyInfo = prefixPrivateKey + privateKey.rawRepresentation
+        let subjectPrivateKeyInfo = prefixPrivateKeyData + privateKey.rawRepresentation
+   //     print("subjectPrivateKeyInfo in hexastring:\(subjectPrivateKeyInfo.toHexString())")
+        
+        print("subjectPrivateKeyInfo bytes:\(subjectPrivateKeyInfo.bytes)")
+
+        print("subjectPublicKeyInfo bytes:\(subjectPublicKeyInfo.bytes)")
         let pemPrivateKeyString = subjectPrivateKeyInfo.base64EncodedString()
+        writePrivateKeyToFile(privateKeyInBase64: pemPrivateKeyString);
         let pemPublicKeyStringHexa = subjectPublicKeyInfo.hexEncodedString()
         print("pemPublicKeyStringHexa:\(pemPublicKeyStringHexa)")
         //let pemPublicKeyStringBytes = subjectPublicKeyInfo.bytes;
@@ -81,133 +261,6 @@ public class ED25519BuiltInSwift {
             
         }
     }
-    public func keyGenerate2() {
-        let privateKey = Curve25519.Signing.PrivateKey.init();
-        let publicKey = privateKey.publicKey;
-        //private key to PEM
-        let prefix1 = Data([0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x6E, 0x03, 0x21, 0x00])
-        let subjectPublicKeyInfo = prefix1 + publicKey.rawRepresentation
-        let pemPublicKeyString = subjectPublicKeyInfo.base64EncodedString();
-        let pemPublicKeyString2 = subjectPublicKeyInfo.string?.base64Encoded;        //publicKey rawRepresentation
-        let pemToBase64 = pemPublicKeyString.base64Decoded;
-        print("pemTOBase64:\(pemToBase64)")
-        print("publicKey raw resprentation:\(publicKey.rawRepresentation)")
-        print("publicKey bytes:\(publicKey.rawRepresentation.bytes)")
-        print("publicKey base64 string:\(publicKey.rawRepresentation.base64EncodedString())")
-        print("publicKey base64 data");
-        print(publicKey.rawRepresentation.base64EncodedData(options: .lineLength64Characters))
-        print("hex publicKey:");
-        print(publicKey.rawRepresentation.toHexString())
-        print("pemPublicKeyString:\(pemPublicKeyString)")
-        print("base64 to String:")
-        let base64 = publicKey.rawRepresentation.base64EncodedString();
-       // print(base64.fromBase64())
-    }
-    public func keyGenerate() {
-        //key generation
-        let privateKey = Curve25519.Signing.PrivateKey.init();
-        let publicKey = privateKey.publicKey;
-        //key display in different way
-        //base64EncodedString
-        print("privateKey base64EncodedString:\(privateKey.rawRepresentation.base64EncodedString())")
-        let privateKeyBase64 = privateKey.rawRepresentation.base64EncodedString();
-        let bytesPrivatekeyFromBase64 = privateKeyBase64.bytes;
-        print("private key bytes from base 64:\(bytesPrivatekeyFromBase64)")
-        //bytes
-        print("privateKey bytes:\(privateKey.rawRepresentation.bytes)")
-        //rawPresentation
-        print("privateKey rawpresentation:\(privateKey.rawRepresentation)")
-        //NSData
-        print("privateKey NSData:\(privateKey.rawRepresentation as NSData)")
-        debugPrint(publicKey.rawRepresentation as NSData)
-        let prefix1 = Data([0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x6E, 0x03, 0x21, 0x00])
-        let prefix2 = Data([0x20, 0x2B, 0x35, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x6E, 0x03, 0x21, 0x00])
-        let subjectPublicKeyInfo = prefix1 + publicKey.rawRepresentation
-        let pemPublicKeyString = subjectPublicKeyInfo.base64EncodedString();
-        print("pemPublicKeyString:\(pemPublicKeyString)")
-        
-        let privateKeyChange = prefix2 + privateKey.rawRepresentation
-        let pemPrivateKeyString = privateKeyChange.base64EncodedString();
-        print("PemPrivateKeyString:\(pemPrivateKeyString)")
-        
-        let publicKeyPem:String = "MCowBQYDK2VwAyEA2MlSwH0IxuvstH1WCGFtXXomJaEFPIzKosRgWxUzjMc=";
-        let SubjectPublicKeyInfo = publicKeyPem.base64Decoded;
-        print("SubjectPublicKeyInfo:\(SubjectPublicKeyInfo)")
-        //test with base 64 and bytes
-        let bytes:[UInt8] =  [226, 70, 236, 124, 209, 125, 116, 164, 119, 213, 135, 1, 34, 12, 121, 143, 218, 30, 102, 68, 167, 224, 248, 239, 5, 206, 199, 166, 55, 21, 94, 99];
-        print("base 64 for bytes:\(bytes.toBase64())")
-        print("bytes from base 64:\(bytes.toBase64().bytes)")
-        let message:[UInt8] = [123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,123,13,31,44,55,23,1,45,24,243,111,22,3,2,144,42,3,4,3,5];
-        do {
-            //sign message and verify message
-            let signMessage = try privateKey.signature(for: message);
-            if publicKey.isValidSignature(signMessage, for: message) {
-                print("Mac check for Mac signuture success")
-            } else {
-                print("Mac check for Mac signature fail")
-            }
-        } catch {
-            
-        }
-        //create key from PEM file
-    }
-}
-extension StringProtocol {
-    var data: Data { Data(utf8) }
-    var base64Encoded: Data { data.base64EncodedData() }
-    var base64Decoded: Data? { Data(base64Encoded: string) }
-}
-extension LosslessStringConvertible {
-    var string: String { .init(self) }
-}
-extension Sequence where Element == UInt8 {
-    var data: Data { .init(self) }
-    var base64Decoded: Data? { Data(base64Encoded: data) }
-    var string: String? { String(bytes: self, encoding: .utf8) }
+    
 }
 
-extension Data {
-  /// A hexadecimal string representation of the bytes.
-  func hexEncodedString() -> String {
-    let hexDigits = Array("0123456789abcdef".utf16)
-    var hexChars = [UTF16.CodeUnit]()
-    hexChars.reserveCapacity(count * 2)
-
-    for byte in self {
-      let (index1, index2) = Int(byte).quotientAndRemainder(dividingBy: 16)
-      hexChars.append(hexDigits[index1])
-      hexChars.append(hexDigits[index2])
-    }
-
-    return String(utf16CodeUnits: hexChars, count: hexChars.count)
-  }
-}
-
-extension String {
-  /// A data representation of the hexadecimal bytes in this string.
-  func hexDecodedData() -> Data {
-    // Get the UTF8 characters of this string
-    let chars = Array(utf8)
-
-    // Keep the bytes in an UInt8 array and later convert it to Data
-    var bytes = [UInt8]()
-    bytes.reserveCapacity(count / 2)
-
-    // It is a lot faster to use a lookup map instead of strtoul
-    let map: [UInt8] = [
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, // 01234567
-      0x08, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 89:;<=>?
-      0x00, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x00, // @ABCDEFG
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // HIJKLMNO
-    ]
-
-    // Grab two characters at a time, map them and turn it into a byte
-    for i in stride(from: 0, to: count, by: 2) {
-      let index1 = Int(chars[i] & 0x1F ^ 0x10)
-      let index2 = Int(chars[i + 1] & 0x1F ^ 0x10)
-      bytes.append(map[index1] << 4 | map[index2])
-    }
-
-    return Data(bytes)
-  }
-}
