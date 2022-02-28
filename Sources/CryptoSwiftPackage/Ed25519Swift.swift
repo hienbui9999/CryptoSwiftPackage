@@ -50,6 +50,15 @@ public class Ed25519Swift {
     public func generateKey() {
         privateKey = Curve25519.Signing.PrivateKey.init();
         publicKey = privateKey.publicKey;
+        let message2:String = "0203f3f44c9e80e2cedc1a2909631a3adea8866ee32187f74d0912387359b0ff36a2"
+        do {
+            let signMessage = try privateKey.signature(for: Data(message2.bytes));
+            let iscorrect = try publicKey.isValidSignature(signMessage, for: Data(message2.bytes));
+            print("is correct:\(iscorrect)")
+        } catch {
+            print("Error:\(error)")
+        }
+        print("doen")
     }
     ///Write private key to pem file
     public func writePrivateKeyToPemFile(privateKeyToWrite:Curve25519.Signing.PrivateKey,fileName:String) throws {
@@ -111,7 +120,9 @@ public class Ed25519Swift {
                 print("pemStr:\(pemStr)")
                 let fullPemKeyBase64 = prefixPrivateKeyStr + privateBase64;
                 let base64ToBytes = fullPemKeyBase64.base64Decoded!.bytes
+                print("bytes:\(base64ToBytes)")
                 let privateBytes = base64ToBytes[prefixPrivateKeyData.count..<base64ToBytes.count];
+                print("privateBytes:\(privateBytes)")
                 do {
                     let privateKey = try Curve25519.Signing.PrivateKey.init(rawRepresentation: privateBytes)
                     print(privateKey.rawRepresentation.base64EncodedString())
@@ -174,9 +185,9 @@ public class Ed25519Swift {
         }
     }
     ///Sign message
-    public func signMessage(messageToSign:Data) throws -> Data {
+    public func signMessage(messageToSign:Data,withPrivateKey:Curve25519.Signing.PrivateKey) throws -> Data {
         do {
-            let signMessage = try privateKey.signature(for: messageToSign);
+            let signMessage = try withPrivateKey.signature(for: messageToSign);
             return signMessage
         } catch {
             throw SignActionError.SignMessageError
@@ -186,8 +197,10 @@ public class Ed25519Swift {
     public func verify(signedMessage:Data,pulicKeyToVerify:Curve25519.Signing.PublicKey, originalMessage:Data) -> Bool {
         if pulicKeyToVerify.isValidSignature(signedMessage, for: originalMessage) {
             print("Mac check for Mac signuture success")
+            return true
         } else {
             print("Mac check for Mac signature fail")
+            return false
         }
         return true
     }
