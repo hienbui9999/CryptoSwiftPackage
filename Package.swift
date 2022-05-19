@@ -16,6 +16,7 @@ let package = Package(
     dependencies: [
         .package(name:"ed25519swift",url: "https://github.com/pebble8888/ed25519swift.git", from: "1.2.7"),
         .package(name:"secp256k1",url: "https://github.com/Boilertalk/secp256k1.swift.git", from: "0.1.0"),
+        .package(name: "SwiftECC", url: "https://github.com/leif-ibsen/SwiftECC", from: "3.3.0"),
         .package(name:"Blake2",url: "https://github.com/tesseract-one/Blake2.swift.git", from: "0.1.0"),
        
     ],
@@ -24,9 +25,9 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "CryptoSwiftPackage",
-            dependencies: ["ed25519swift","secp256k1","Blake2",]),
+            dependencies: ["ed25519swift","SwiftECC","secp256k1","Blake2",]),
         .testTarget(
             name: "CryptoSwiftPackageTests",
-            dependencies: ["CryptoSwiftPackage","ed25519swift","secp256k1","Blake2",]),
+            dependencies: ["CryptoSwiftPackage","SwiftECC","ed25519swift","secp256k1","Blake2",]),
     ]
 )

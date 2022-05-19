@@ -44,22 +44,22 @@ public class CryptoSwiftPackage {
         ///private generation using Swift built in library
         let privateKey = P256.Signing.PrivateKey.init(compactRepresentable: true).rawRepresentation;
        
-        let privateKey2 = Curve25519.Signing.PrivateKey.init();
+        //let privateKey2 = Curve25519.Signing.PrivateKey.init();
         print("private key for P256 is:\(privateKey.base64EncodedString())")
         ///context for handling public key generation and  signing
         let ctx = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN));
         let signature : UnsafeMutablePointer<secp256k1_ecdsa_signature> = UnsafeMutablePointer<secp256k1_ecdsa_signature>.allocate(capacity: 1);
         
-        let messageToSignArray:[UInt8] = [1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,3,3,4,5,3,4,5,3,4,5,4,4,2];
+        let messageToSignArray:[UInt8] = [102, 248, 146, 22, 222, 230, 202, 64, 136, 28, 234, 149, 104, 51, 94, 101, 26, 201, 243, 195, 99, 6, 39, 219, 54, 138, 138, 223, 0, 140, 153, 191];
         var messageToSign : UnsafePointer<UInt8> = UnsafePointer(messageToSignArray);
         ///public key generation
           var pk_secp256k1_pubkey : UnsafeMutablePointer<secp256k1_pubkey> = UnsafeMutablePointer<secp256k1_pubkey>.allocate(capacity: 1);
         if ctx != nil {
-            privateKey2.rawRepresentation.withUnsafeBytes { (unsafeBytes) in
+          /*  privateKey2.rawRepresentation.withUnsafeBytes { (unsafeBytes) in
                 let privateKeyBytes2 = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
                 let validPrivateKey2 = secp256k1_ec_seckey_verify(ctx!,privateKeyBytes2);
                 print("validPrivateKey2:\(validPrivateKey2)")
-            }
+            }*/
             print("Context created,ctx:\(ctx), ctxHashValue:\(ctx?.hashValue)")
             privateKey.withUnsafeBytes { (unsafeBytes) in
                 let privateKeyBytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
@@ -70,6 +70,7 @@ public class CryptoSwiftPackage {
                 ///check private key valid
                 let validPrivateKey = secp256k1_ec_seckey_verify(ctx!,privateKeyBytes);
                 print("validPrivateKey:\(validPrivateKey)")
+                print("private key bytes:\(privateKeyBytes)")
                 
                // let publicKeyMac256k1 = SecKeyCopyPublicKey(privateKey.bytes as! SecKey)
                // print("PubclKeyMac256k1:\(publicKeyMac256k1)")

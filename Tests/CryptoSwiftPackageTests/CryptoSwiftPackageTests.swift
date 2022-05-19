@@ -6,7 +6,9 @@ final class CryptoSwiftPackageTests: XCTestCase {
     func testExample() throws {
         let blake:Blake2b = Blake2b();
         blake.test();
-        let ed25519Swift:Ed25519Swift = Ed25519Swift();
+        let sepc256:CryptoSwiftPackage = CryptoSwiftPackage()
+        sepc256.secp256k1GenerateKey()
+        /*let ed25519Swift:Ed25519Swift = Ed25519Swift();
         ed25519Swift.generateKey()
         do {
             try ed25519Swift.writePrivateKeyToPemFile(privateKeyToWrite: ed25519Swift.privateKey, fileName: "SwiftPrivateKeyEd25519.pem");
@@ -44,7 +46,7 @@ final class CryptoSwiftPackageTests: XCTestCase {
             
         } catch {
             print("Error:\(error)")
-        }
+        }*/
         
     }
 }
